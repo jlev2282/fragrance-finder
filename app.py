@@ -123,12 +123,65 @@ def filter_by_family(df: pd.DataFrame, family: str) -> pd.DataFrame:
     return df[mask].copy()
 
 
-def why_youll_love_it(family: str, notes: str) -> str:
-    family_display = title_case(family)
-    notes_display = title_case(notes) if notes else "distinctive accords"
-    return (
-        f"If you love {family_display}, this selection features beautiful notes of "
-        f"{notes_display}."
+FAMILY_ADJECTIVES = {
+    "woody": "grounded",
+    "floral": "soft",
+    "citrus": "bright",
+    "amber": "warm",
+    "aromatic": "fresh",
+    "leather": "bold",
+    "aquatic": "crisp",
+    "oriental": "rich",
+    "gourmand": "indulgent",
+    "spicy": "vibrant",
+    "musk": "sensual",
+    "chypre": "elegant",
+    "fougère": "classic",
+}
+
+RECOMMENDATION_TEMPLATES = [
+    "Opens with {lead} and settles into a {adj} {family} dry-down.",
+    "A standout {family} pick — {lead} up front, with real depth.",
+    "{lead} lead here, layered over a smooth {family} base.",
+    "Built around {lead} for a {adj}, wear-anywhere {family} feel.",
+    "Wears easy but leaves an impression — {lead} carry the opening.",
+    "One to try on skin: {adj} {family} energy with {lead} at the center.",
+    "This leans {adj} and {family}, anchored by {lead}.",
+    "Expect {lead} first, then a lingering {family} trail.",
+    "A solid {family} option when you want something {adj} — note the {lead}.",
+    "Signature-worthy: {lead} woven through a balanced {family} profile.",
+    "Approachable yet distinct — {lead} give it immediate character.",
+    "For something {adj} in the {family} family, start with the {lead}.",
+]
+
+
+def extract_lead_notes(notes: str, count: int = 2) -> str:
+    if not notes or notes == "nan":
+        return "distinctive accords"
+
+    parts = [part.strip() for part in notes.split(",") if part.strip()]
+    if not parts:
+        return "distinctive accords"
+    if len(parts) == 1:
+        return title_case(parts[0])
+
+    highlighted = [title_case(part) for part in parts[:count]]
+    if len(highlighted) == 1:
+        return highlighted[0]
+    return f"{highlighted[0]} and {highlighted[1]}"
+
+
+def recommendation_blurb(family: str, notes: str, index: int) -> str:
+    family_key = family.strip().lower()
+    family_display = title_case(family_key)
+    lead = extract_lead_notes(notes)
+    adj = FAMILY_ADJECTIVES.get(family_key, "distinctive")
+    template = RECOMMENDATION_TEMPLATES[index % len(RECOMMENDATION_TEMPLATES)]
+
+    return template.format(
+        family=family_display,
+        lead=lead,
+        adj=adj,
     )
 
 
@@ -344,7 +397,7 @@ def render_recommendations(df: pd.DataFrame):
                 st.session_state.selected_family = None
                 st.rerun()
     else:
-        for _, row in matches.iterrows():
+        for index, (_, row) in enumerate(matches.iterrows()):
             notes = row["core key notes"]
             st.markdown(
                 f"""
@@ -353,7 +406,7 @@ def render_recommendations(df: pd.DataFrame):
                     <div class="rec-name">{title_case(row["fragrance name"])}</div>
                     <div class="rec-family">{title_case(row["primary olfactory family"])}</div>
                     <div class="rec-notes">{title_case(notes)}</div>
-                    <div class="rec-why">{why_youll_love_it(family, notes)}</div>
+                    <div class="rec-why">{recommendation_blurb(family, notes, index)}</div>
                 </div>
                 """,
                 unsafe_allow_html=True,
