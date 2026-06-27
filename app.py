@@ -3,40 +3,200 @@ import re
 import pandas as pd
 import streamlit as st
 
-# Popular fragrances not in store inventory — mapped to olfactory family keywords
+# Popular fragrances not in store inventory — profile used to match in-store stock
 EXTERNAL_FRAGRANCES = {
-    "sauvage": "aromatic",
-    "dior sauvage": "aromatic",
-    "eros": "amber",
-    "versace eros": "amber",
-    "bleu de chanel": "woody aromatic",
-    "acqua di gio": "aquatic",
-    "light blue": "citrus",
-    "dolce light blue": "citrus",
-    "black opium": "oriental",
-    "good girl": "floral",
-    "carolina herrera good girl": "floral",
-    "libre": "floral",
-    "ysl libre": "floral",
-    "lost cherry": "gourmand",
-    "tom ford lost cherry": "gourmand",
-    "baccarat rouge 540": "amber",
-    "creed aventus": "woody",
-    "1 million": "spicy",
-    "paco rabanne 1 million": "spicy",
-    "angel": "gourmand",
-    "thierry mugler angel": "gourmand",
-    "la vie est belle": "floral",
-    "flowerbomb": "floral",
-    "viktor rolf flowerbomb": "floral",
-    "chanel no 5": "floral",
-    "no. 5": "floral",
-    "miss dior": "floral",
-    "jo malone wood sage": "woody",
-    "tom ford oud wood": "woody",
-    "by the fireplace": "woody",
-    "le male": "aromatic",
-    "jean paul gaultier le male": "aromatic",
+    "sauvage": {
+        "name": "Sauvage",
+        "brand": "Dior",
+        "family": "Aromatic Fougère",
+        "notes": "Bergamot, Pepper, Ambroxan, Lavender, Patchouli",
+    },
+    "dior sauvage": {
+        "name": "Sauvage",
+        "brand": "Dior",
+        "family": "Aromatic Fougère",
+        "notes": "Bergamot, Pepper, Ambroxan, Lavender, Patchouli",
+    },
+    "eros": {
+        "name": "Eros",
+        "brand": "Versace",
+        "family": "Amber Aromatic",
+        "notes": "Mint, Green Apple, Lemon, Tonka Bean, Vanilla, Cedar",
+    },
+    "versace eros": {
+        "name": "Eros",
+        "brand": "Versace",
+        "family": "Amber Aromatic",
+        "notes": "Mint, Green Apple, Lemon, Tonka Bean, Vanilla, Cedar",
+    },
+    "bleu de chanel": {
+        "name": "Bleu de Chanel",
+        "brand": "Chanel",
+        "family": "Woody Aromatic",
+        "notes": "Grapefruit, Mint, Pink Pepper, Ginger, Cedar, Sandalwood",
+    },
+    "acqua di gio": {
+        "name": "Acqua di Giò",
+        "brand": "Giorgio Armani",
+        "family": "Aromatic Aquatic",
+        "notes": "Marine Notes, Bergamot, Neroli, Rosemary, Patchouli, Musk",
+    },
+    "light blue": {
+        "name": "Light Blue",
+        "brand": "Dolce & Gabbana",
+        "family": "Citrus Aromatic",
+        "notes": "Sicilian Lemon, Apple, Bamboo, Cedar, Amber, Musk",
+    },
+    "dolce light blue": {
+        "name": "Light Blue",
+        "brand": "Dolce & Gabbana",
+        "family": "Citrus Aromatic",
+        "notes": "Sicilian Lemon, Apple, Bamboo, Cedar, Amber, Musk",
+    },
+    "black opium": {
+        "name": "Black Opium",
+        "brand": "Yves Saint Laurent",
+        "family": "Oriental Vanilla",
+        "notes": "Pear, Pink Pepper, Coffee, Jasmine, Vanilla, Patchouli",
+    },
+    "good girl": {
+        "name": "Good Girl",
+        "brand": "Carolina Herrera",
+        "family": "Floral Gourmand",
+        "notes": "Almond, Coffee, Jasmine, Tuberose, Tonka Bean, Cacao",
+    },
+    "carolina herrera good girl": {
+        "name": "Good Girl",
+        "brand": "Carolina Herrera",
+        "family": "Floral Gourmand",
+        "notes": "Almond, Coffee, Jasmine, Tuberose, Tonka Bean, Cacao",
+    },
+    "libre": {
+        "name": "Libre",
+        "brand": "Yves Saint Laurent",
+        "family": "Floral",
+        "notes": "Lavender, Mandarin, Orange Blossom, Jasmine, Vanilla, Amber",
+    },
+    "ysl libre": {
+        "name": "Libre",
+        "brand": "Yves Saint Laurent",
+        "family": "Floral",
+        "notes": "Lavender, Mandarin, Orange Blossom, Jasmine, Vanilla, Amber",
+    },
+    "lost cherry": {
+        "name": "Lost Cherry",
+        "brand": "Tom Ford",
+        "family": "Floral Gourmand",
+        "notes": "Black Cherry, Cherry Liqueur, Almond, Rose, Tonka Bean, Vanilla",
+    },
+    "tom ford lost cherry": {
+        "name": "Lost Cherry",
+        "brand": "Tom Ford",
+        "family": "Floral Gourmand",
+        "notes": "Black Cherry, Cherry Liqueur, Almond, Rose, Tonka Bean, Vanilla",
+    },
+    "baccarat rouge 540": {
+        "name": "Baccarat Rouge 540",
+        "brand": "Maison Francis Kurkdjian",
+        "family": "Amber Floral",
+        "notes": "Saffron, Jasmine, Amberwood, Ambergris, Cedar, Fir Resin",
+    },
+    "creed aventus": {
+        "name": "Aventus",
+        "brand": "Creed",
+        "family": "Woody Fruity",
+        "notes": "Pineapple, Bergamot, Birch, Patchouli, Musk, Oakmoss, Vanilla",
+    },
+    "1 million": {
+        "name": "1 Million",
+        "brand": "Paco Rabanne",
+        "family": "Woody Spicy",
+        "notes": "Grapefruit, Mint, Cinnamon, Rose, Amber, Leather, Patchouli",
+    },
+    "paco rabanne 1 million": {
+        "name": "1 Million",
+        "brand": "Paco Rabanne",
+        "family": "Woody Spicy",
+        "notes": "Grapefruit, Mint, Cinnamon, Rose, Amber, Leather, Patchouli",
+    },
+    "angel": {
+        "name": "Angel",
+        "brand": "Mugler",
+        "family": "Amber Gourmand",
+        "notes": "Cotton Candy, Coconut, Honey, Red Berries, Patchouli, Vanilla",
+    },
+    "thierry mugler angel": {
+        "name": "Angel",
+        "brand": "Mugler",
+        "family": "Amber Gourmand",
+        "notes": "Cotton Candy, Coconut, Honey, Red Berries, Patchouli, Vanilla",
+    },
+    "la vie est belle": {
+        "name": "La Vie Est Belle",
+        "brand": "Lancôme",
+        "family": "Floral Fruity Gourmand",
+        "notes": "Black Currant, Pear, Iris, Jasmine, Orange Blossom, Patchouli, Vanilla",
+    },
+    "flowerbomb": {
+        "name": "Flowerbomb",
+        "brand": "Viktor & Rolf",
+        "family": "Floral",
+        "notes": "Tea, Bergamot, Orchid, Rose, Jasmine, Patchouli, Musk",
+    },
+    "viktor rolf flowerbomb": {
+        "name": "Flowerbomb",
+        "brand": "Viktor & Rolf",
+        "family": "Floral",
+        "notes": "Tea, Bergamot, Orchid, Rose, Jasmine, Patchouli, Musk",
+    },
+    "chanel no 5": {
+        "name": "No. 5",
+        "brand": "Chanel",
+        "family": "Floral Aldehyde",
+        "notes": "Aldehydes, Neroli, Ylang-Ylang, Jasmine, Rose, Sandalwood, Vanilla",
+    },
+    "no. 5": {
+        "name": "No. 5",
+        "brand": "Chanel",
+        "family": "Floral Aldehyde",
+        "notes": "Aldehydes, Neroli, Ylang-Ylang, Jasmine, Rose, Sandalwood, Vanilla",
+    },
+    "miss dior": {
+        "name": "Miss Dior",
+        "brand": "Dior",
+        "family": "Floral Chypre",
+        "notes": "Blood Orange, Rose, Jasmine, Patchouli, Musk",
+    },
+    "jo malone wood sage": {
+        "name": "Wood Sage & Sea Salt",
+        "brand": "Jo Malone",
+        "family": "Woody Aromatic",
+        "notes": "Ambrette, Sea Salt, Sage, Grapefruit, Red Algae",
+    },
+    "tom ford oud wood": {
+        "name": "Oud Wood",
+        "brand": "Tom Ford",
+        "family": "Woody Spicy",
+        "notes": "Oud, Rosewood, Cardamom, Sandalwood, Vetiver, Tonka Bean",
+    },
+    "by the fireplace": {
+        "name": "By the Fireplace",
+        "brand": "Maison Martin Margiela",
+        "family": "Woody Spicy",
+        "notes": "Clove, Chestnut, Vanilla, Guaiac Wood, Cashmeran",
+    },
+    "le male": {
+        "name": "Le Male",
+        "brand": "Jean Paul Gaultier",
+        "family": "Aromatic Fougère",
+        "notes": "Mint, Lavender, Bergamot, Cinnamon, Vanilla, Tonka Bean",
+    },
+    "jean paul gaultier le male": {
+        "name": "Le Male",
+        "brand": "Jean Paul Gaultier",
+        "family": "Aromatic Fougère",
+        "notes": "Mint, Lavender, Bergamot, Cinnamon, Vanilla, Tonka Bean",
+    },
 }
 
 FAMILY_KEYWORDS = [
@@ -102,17 +262,32 @@ def find_in_inventory(df: pd.DataFrame, query: str) -> pd.Series | None:
     return None
 
 
-def lookup_external_fragrance(query: str) -> str | None:
+def resolve_family_keyword(family: str) -> str:
+    family = family.strip().lower()
+    for keyword in FAMILY_KEYWORDS:
+        if keyword.lower() in family:
+            return keyword.lower()
+    return family.split()[0] if family else ""
+
+
+def lookup_external_fragrance(query: str) -> dict | None:
     query = query.strip().lower()
     if not query:
         return None
 
     if query in EXTERNAL_FRAGRANCES:
-        return EXTERNAL_FRAGRANCES[query]
+        return {**EXTERNAL_FRAGRANCES[query], "matched_as": query}
 
-    for name, family in EXTERNAL_FRAGRANCES.items():
+    best_match = None
+    best_len = 0
+    for name, profile in EXTERNAL_FRAGRANCES.items():
         if name in query or query in name:
-            return family
+            if len(name) > best_len:
+                best_match = name
+                best_len = len(name)
+
+    if best_match:
+        return {**EXTERNAL_FRAGRANCES[best_match], "matched_as": best_match}
 
     return None
 
@@ -199,6 +374,8 @@ def init_session_state():
         "user_query": "",
         "confirmation_shown": False,
         "redirect_message": None,
+        "external_profile": None,
+        "match_source": None,
     }
     for key, value in defaults.items():
         if key not in st.session_state:
@@ -271,6 +448,25 @@ def inject_styles():
                 padding: 1.5rem;
                 margin: 1.5rem 0;
             }
+            .external-box {
+                background: #eff6ff;
+                border: 1px solid #93c5fd;
+                border-radius: 12px;
+                padding: 1.5rem;
+                margin: 1.5rem 0;
+            }
+            .external-badge {
+                display: inline-block;
+                background: #dbeafe;
+                color: #1d4ed8;
+                font-size: 0.75rem;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                padding: 0.25rem 0.6rem;
+                border-radius: 999px;
+                margin-bottom: 0.75rem;
+            }
             div[data-testid="column"] button {
                 width: 100%;
             }
@@ -322,6 +518,32 @@ def render_landing():
             st.rerun()
 
 
+def render_external_confirm(profile: dict):
+    st.title("We know this one")
+    st.markdown(
+        f"""
+        <div class="external-box">
+            <div class="external-badge">Not in our inventory</div>
+            <div class="rec-brand">{profile["brand"]}</div>
+            <div class="rec-name">{profile["name"]}</div>
+            <div class="rec-family"><strong>Profile:</strong> {profile["family"]}</div>
+            <div class="rec-notes"><strong>Core Notes:</strong> {profile["notes"]}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        '<p class="subtitle">Here\'s the scent profile — we\'ll match you to similar fragrances we carry in-store.</p>',
+        unsafe_allow_html=True,
+    )
+
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        if st.button("See in-store matches", type="primary", use_container_width=True):
+            st.session_state.step = "recommendations"
+            st.rerun()
+
+
 def render_favorite_confirm(match: pd.Series, family: str):
     st.title("We found your match")
     st.markdown(
@@ -368,8 +590,17 @@ def render_family_select(df: pd.DataFrame):
                 with col:
                     if st.button(family, key=f"family_{family}", use_container_width=True):
                         st.session_state.selected_family = family.lower()
+                        st.session_state.external_profile = None
+                        st.session_state.match_source = "manual"
                         st.session_state.step = "recommendations"
                         st.rerun()
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        if st.button("Start Over", type="primary", use_container_width=True, key="family_start_over"):
+            reset_session()
+            st.rerun()
 
 
 def render_recommendations(df: pd.DataFrame):
@@ -383,10 +614,19 @@ def render_recommendations(df: pd.DataFrame):
     family_display = title_case(family)
 
     st.title("Your matches")
-    st.markdown(
-        f'<p class="subtitle">Based on your <strong>{family_display}</strong> profile</p>',
-        unsafe_allow_html=True,
-    )
+
+    if st.session_state.match_source == "external" and st.session_state.external_profile:
+        profile = st.session_state.external_profile
+        st.markdown(
+            f'<p class="subtitle">Similar to <strong>{profile["brand"]} {profile["name"]}</strong> '
+            f'({profile["family"]}) — available in-store now</p>',
+            unsafe_allow_html=True,
+        )
+    else:
+        st.markdown(
+            f'<p class="subtitle">Based on your <strong>{family_display}</strong> profile</p>',
+            unsafe_allow_html=True,
+        )
 
     if matches.empty:
         st.info(f"No in-store matches found for {family_display}. Try another profile.")
@@ -426,30 +666,26 @@ def process_favorite_input(df: pd.DataFrame):
 
     if match is not None:
         st.session_state.matched_fragrance = match.to_dict()
+        st.session_state.external_profile = None
+        st.session_state.match_source = "inventory"
         family = match["primary olfactory family"]
-        for keyword in FAMILY_KEYWORDS:
-            if keyword.lower() in family:
-                st.session_state.selected_family = keyword.lower()
-                break
-        else:
-            st.session_state.selected_family = family.split()[0]
+        st.session_state.selected_family = resolve_family_keyword(family)
         st.session_state.step = "favorite_confirm"
         st.rerun()
         return
 
-    external_family = lookup_external_fragrance(query)
-    if external_family:
-        for keyword in FAMILY_KEYWORDS:
-            if keyword.lower() in external_family:
-                st.session_state.selected_family = keyword.lower()
-                st.session_state.step = "recommendations"
-                st.rerun()
-                return
-        st.session_state.selected_family = external_family
-        st.session_state.step = "recommendations"
+    external_profile = lookup_external_fragrance(query)
+    if external_profile:
+        st.session_state.external_profile = external_profile
+        st.session_state.matched_fragrance = None
+        st.session_state.match_source = "external"
+        st.session_state.selected_family = resolve_family_keyword(external_profile["family"])
+        st.session_state.step = "external_confirm"
         st.rerun()
         return
 
+    st.session_state.external_profile = None
+    st.session_state.match_source = None
     st.session_state.redirect_message = (
         f"We couldn't find \"{query}\" in our inventory — let's pick a scent profile instead."
     )
@@ -477,6 +713,8 @@ def main():
     elif step == "favorite_confirm":
         match = pd.Series(st.session_state.matched_fragrance)
         render_favorite_confirm(match, st.session_state.selected_family)
+    elif step == "external_confirm":
+        render_external_confirm(st.session_state.external_profile)
     elif step == "family_select":
         render_family_select(df)
     elif step == "recommendations":
